@@ -3,10 +3,20 @@
   "version": "0.0.2",
   "description": "Create Terraform state from your AWS infrastructure",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": "dist/terraform-import.js",
+  "prepublish": "tsc -p .",
   "scripts": {
     "build": "tsc -p ."
   },
   "repository": "https://github.com/glingt/terraform-import-aws.git",
   "author": "Nils Eriksson <nilser@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.639.0",
+    "chalk": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^13.9.1"
+  }
 }
