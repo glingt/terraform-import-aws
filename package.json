@@ -1,6 +1,6 @@
 {
   "name": "terraform-import-aws",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Create Terraform state from your AWS infrastructure",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
