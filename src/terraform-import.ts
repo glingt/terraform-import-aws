@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 console.log("Migrating...");
 
 import * as AWS from "aws-sdk";
