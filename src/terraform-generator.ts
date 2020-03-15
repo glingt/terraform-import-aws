@@ -1,4 +1,4 @@
-import { TerraformElement } from "terraform-state-in-typescript";
+import { TerraformElement, ResourceElement } from "terraform-state-in-typescript";
 
 export const toTfFormat = (resource: TerraformElement): string => {
   switch (resource.type) {

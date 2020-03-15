@@ -1,6 +1,6 @@
 import { TerraformInstance } from "../terraform-state";
 import * as AWS from "aws-sdk";
-import { composite, TerraformElement, resource } from "terraform-state-in-typescript";
+import { resource, ResourceElement } from "terraform-state-in-typescript";
 
 type AWSResult<T> = { err?: AWS.AWSError; data?: T };
 type AWSCallback<T> = (err: AWS.AWSError, data: T) => void;
@@ -16,15 +16,20 @@ const getResult = <T>(result: AWSResult<T>) => {
 };
 
 interface ResourceDescriptor {
-  name: string;
+  name: string | undefined;
 }
 
 interface ImportType<T> {
   type: string;
   fetcher: () => Promise<T[]>;
-  descriptor: (t: T) => { name: string | undefined };
+  descriptor: (t: T) => ResourceDescriptor;
   matcher: (t: T, instance: TerraformInstance) => boolean;
-  doImport: (identifier: string) => Promise<TerraformElement>;
+  doImport: (identifier: string) => Promise<ImportResult[]>;
+}
+
+interface ImportResult {
+  name: string;
+  resource: ResourceElement;
 }
 
 export const descriptors: ImportType<any>[] = [
@@ -64,7 +69,7 @@ export const descriptors: ImportType<any>[] = [
     descriptor: (bucket: AWS.S3.Bucket) => ({ name: bucket.Name }),
     doImport: async (identifier: string) => {
       const result = await getAwsData<AWS.S3.ListBucketsOutput>(cb => new AWS.S3().getBucketAcl(cb));
-      return composite();
+      return [];
     },
   },
   {
@@ -80,8 +85,14 @@ export const descriptors: ImportType<any>[] = [
         new AWS.IAM().getRole({ RoleName: identifier }, cb),
       );
       const role = result.Role;
-      console.log("Saving role...");
-      return resource("aws_iam_role", role.RoleName, {});
+      return [
+        {
+          name: role.RoleName,
+          resource: resource("aws_iam_role", role.RoleName, {
+            assume_role_policy: role.AssumeRolePolicyDocument,
+          }),
+        },
+      ];
     },
   },
 ];

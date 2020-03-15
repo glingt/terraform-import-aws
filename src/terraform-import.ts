@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { composite } from "terraform-state-in-typescript";
+import { exec } from "child_process";
 import { toTfFormat } from "./terraform-generator";
 import * as AWS from "aws-sdk";
 import * as fs from "fs";
@@ -43,8 +45,22 @@ const doImport = async (url: string) => {
     throw new Error("Illegal type: " + type);
   }
   console.log(chalk.yellow(`Importing ${type} ${identifier}...`));
-  const resource = await descriptor.doImport(identifier);
-  fs.writeFileSync("./imported.tf", toTfFormat(resource));
+  const resources = await descriptor.doImport(identifier);
+  fs.writeFileSync("./imported.tf", toTfFormat(composite(...resources.map(r => r.resource))));
+
+  resources.forEach(async v => {
+    await new Promise((resolve, reject) =>
+      exec(`terraform import ${v.resource.resourceType}.${v.resource.resourceId} ${v.name}`, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      }),
+    ).catch(err =>
+      console.log(chalk.red(`Resource could not be imported: ${v.resource.type}.${v.resource.resourceId}`)),
+    );
+  });
 };
 
 AWS.config.update({ region: "eu-west-1" });
