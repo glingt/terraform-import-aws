@@ -14,9 +14,12 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.639.0",
-    "chalk": "^3.0.0"
+    "chalk": "^3.0.0",
+    "terraform-state-in-typescript": "^0.2.2",
+    "yargs": "^15.3.0"
   },
   "devDependencies": {
-    "@types/node": "^13.9.1"
+    "@types/node": "^13.9.1",
+    "@types/yargs": "^15.0.4"
   }
 }
