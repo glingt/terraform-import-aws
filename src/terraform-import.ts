@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-import { composite } from "terraform-state-in-typescript";
+import { composite, createFileContent } from "terraform-state-in-typescript";
 import { exec } from "child_process";
-import { toTfFormat } from "./terraform-generator";
 import * as AWS from "aws-sdk";
 import * as fs from "fs";
 import chalk from "chalk";
@@ -46,7 +45,7 @@ const doImport = async (url: string) => {
   }
   console.log(chalk.yellow(`Importing ${type} ${identifier}...`));
   const resources = await descriptor.doImport(identifier);
-  fs.writeFileSync("./imported.tf", toTfFormat(composite(...resources.map(r => r.resource))));
+  fs.writeFileSync("./imported.tf", createFileContent(composite(...resources.map(r => r.resource))));
 
   resources.forEach(async v => {
     await new Promise((resolve, reject) =>

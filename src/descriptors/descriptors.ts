@@ -1,6 +1,6 @@
 import { TerraformInstance } from "../terraform-state";
 import * as AWS from "aws-sdk";
-import { resource, ResourceElement } from "terraform-state-in-typescript";
+import { resource, jsonencode, ResourceElement } from "terraform-state-in-typescript";
 
 type AWSResult<T> = { err?: AWS.AWSError; data?: T };
 type AWSCallback<T> = (err: AWS.AWSError, data: T) => void;
@@ -89,7 +89,10 @@ export const descriptors: ImportType<any>[] = [
         {
           name: role.RoleName,
           resource: resource("aws_iam_role", role.RoleName, {
-            assume_role_policy: role.AssumeRolePolicyDocument,
+            description: role.Description || "",
+            assume_role_policy:
+              role.AssumeRolePolicyDocument &&
+              jsonencode(JSON.parse(decodeURIComponent(role.AssumeRolePolicyDocument))),
           }),
         },
       ];
