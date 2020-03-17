@@ -15,7 +15,7 @@
   "dependencies": {
     "aws-sdk": "^2.639.0",
     "chalk": "^3.0.0",
-    "terraform-state-in-typescript": "^0.2.2",
+    "terraform-state-in-typescript": "^0.2.4",
     "yargs": "^15.3.0"
   },
   "devDependencies": {

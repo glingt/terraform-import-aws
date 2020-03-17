@@ -275,10 +275,10 @@ supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-terraform-state-in-typescript@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/terraform-state-in-typescript/-/terraform-state-in-typescript-0.2.2.tgz#244dfc14444bc4832bae92d839b0a935d5eb14ba"
-  integrity sha512-P/l3MfqKuUPNnjFuBwm8o1tHLGIfa04Dcca5FMMB13wnazOvSUy1s1bq1mZbRgq8VgRyDbzhC859j8hMsqgEHA==
+terraform-state-in-typescript@^0.2.4:
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/terraform-state-in-typescript/-/terraform-state-in-typescript-0.2.4.tgz#aeb1edffc657dbd427794c37e8da7d2bc8865f3e"
+  integrity sha512-N3jzGyq8eI+AyvppTybxThaHgiiJsJ87Ckh4/fTNXfQ3Rf4i2rXniW/Zn+wHf2/+5ovgUS7m6CbQV1HjIwUtWA==
   dependencies:
     ts-node "^8.6.2"
     typescript "^3.8.3"
