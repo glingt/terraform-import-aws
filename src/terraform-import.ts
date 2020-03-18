@@ -5,7 +5,7 @@ import { exec } from "child_process";
 import * as AWS from "aws-sdk";
 import * as fs from "fs";
 import chalk from "chalk";
-import { TerraformState, TerraformResource } from "./terraform-state";
+import { TerraformState } from "./terraform-state";
 import * as yargs from "yargs";
 import { descriptors, ImportResult } from "./descriptors/descriptors";
 
@@ -31,10 +31,10 @@ const asyncReduce = async <Aggr, T>(arr: T[], fn: (ag: Aggr, t: T) => Promise<Ag
 const getResources = async (): Promise<ResourceInfo[]> => {
   const state: TerraformState = JSON.parse(fs.readFileSync("./terraform.tfstate").toString());
   const resources: ResourceInfo[] = [];
-  for (let i = 0; i < descriptors.length; i++) {
-    const { type, fetcher, descriptor, matcher } = descriptors[i];
+  await asyncForEach(descriptors, async d => {
+    const { type, fetcher, descriptor, matcher } = d;
     const items = await fetcher();
-    items.map(async item => {
+    await asyncForEach(items, async item => {
       const description = descriptor(item);
       const existingResource = state.resources
         .filter(r => r.type === type)
@@ -44,7 +44,7 @@ const getResources = async (): Promise<ResourceInfo[]> => {
         resources.push({ type, identifier: description.identifier });
       }
     });
-  }
+  });
   return resources;
 };
 
