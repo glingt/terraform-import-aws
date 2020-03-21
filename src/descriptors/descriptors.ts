@@ -78,15 +78,22 @@ export const descriptors: ImportType<any>[] = [
     },
     matcher: (bucket: AWS.S3.Bucket, instance) => bucket.Name === instance.attributes.id,
     descriptor: (bucket: AWS.S3.Bucket) => ({ identifier: bucket.Name }),
-    doImport: async (identifier: string) => {
+    doImport: async identifier => {
       const acl = await getAwsData<AWS.S3.GetBucketAclOutput>(cb =>
         new AWS.S3().getBucketAcl({ Bucket: identifier }, cb),
       );
       const web = await getAwsData<AWS.S3.GetBucketWebsiteOutput>(cb =>
         new AWS.S3().getBucketWebsite({ Bucket: identifier }, cb),
       );
-      console.log({ identifier, acl, web });
-      return [{ name: identifier, resource: resource("aws_s3_bucket", identifier, {}) }];
+      const loc = await getAwsData<AWS.S3.GetBucketLocationOutput>(cb =>
+        new AWS.S3().getBucketLocation({ Bucket: identifier }, cb),
+      );
+      return [
+        {
+          name: identifier,
+          resource: resource("aws_s3_bucket", identifier, {}),
+        },
+      ];
     },
   },
   {
@@ -97,7 +104,7 @@ export const descriptors: ImportType<any>[] = [
     },
     matcher: (role: AWS.IAM.Role, instance) => role.RoleName === instance.attributes.id,
     descriptor: (role: AWS.IAM.Role) => ({ identifier: role.RoleName }),
-    doImport: async (identifier: string) => {
+    doImport: async identifier => {
       const result = await getAwsData<AWS.IAM.GetRoleResponse>(cb =>
         new AWS.IAM().getRole({ RoleName: identifier }, cb),
       );

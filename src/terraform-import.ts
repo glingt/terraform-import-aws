@@ -1,32 +1,22 @@
 #!/usr/bin/env node
 
-import { composite, createFileContent, resource, ResourceElement } from "terraform-state-in-typescript";
-import { exec } from "child_process";
-import * as AWS from "aws-sdk";
+import { createFileContent, ResourceElement } from "terraform-state-in-typescript";
+
 import * as fs from "fs";
 import chalk from "chalk";
 import { TerraformState } from "./terraform-state";
 import * as yargs from "yargs";
 import { descriptors, ImportResult } from "./descriptors/descriptors";
+import { asyncForEach, asyncReduce, asyncExec } from "./asyncHelpers";
 
 interface ResourceInfo {
   type: string;
   identifier: string | undefined;
 }
 
-const asyncForEach = async <T>(arr: T[], fn: (t: T) => Promise<void>) => {
-  for (let i = 0; i < arr.length; i++) {
-    await fn(arr[i]);
-  }
-};
-
-const asyncReduce = async <Aggr, T>(arr: T[], fn: (ag: Aggr, t: T) => Promise<Aggr>, a0: Aggr) => {
-  let a = a0;
-  await asyncForEach(arr, async elem => {
-    a = await fn(a, elem);
-  });
-  return a;
-};
+interface LogOptions {
+  verbose: boolean;
+}
 
 const getResources = async (): Promise<ResourceInfo[]> => {
   const state: TerraformState = JSON.parse(fs.readFileSync("./terraform.tfstate").toString());
@@ -48,7 +38,7 @@ const getResources = async (): Promise<ResourceInfo[]> => {
   return resources;
 };
 
-const importResources = async (resources: ResourceInfo[]) => {
+const importResources = async (resources: ResourceInfo[], options: LogOptions) => {
   const imports = await asyncReduce<ImportResult[], ResourceInfo>(
     resources,
     async (allResources: ImportResult[], r: ResourceInfo) => {
@@ -68,27 +58,21 @@ const importResources = async (resources: ResourceInfo[]) => {
 
   const getFile = (r: ResourceElement) => `./${r.resourceType} ${r.resourceId}.tf`;
 
-  imports.forEach(v => {
-    fs.writeFileSync(getFile(v.resource), createFileContent(v.resource));
-  });
-
-  await asyncForEach(imports, v =>
-    new Promise((resolve, reject) =>
-      exec(`terraform import ${v.resource.resourceType}.${v.resource.resourceId} ${v.name}`, (err, data) => {
-        if (err) {
-          fs.unlinkSync(getFile(v.resource));
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      }),
-    )
-      .then(() => {})
-      .catch(err => {
+  await asyncForEach(imports, async v => {
+    const filename = getFile(v.resource);
+    fs.writeFileSync(filename, createFileContent(v.resource));
+    try {
+      await asyncExec(`terraform import ${v.resource.resourceType}.${v.resource.resourceId} ${v.name}`);
+    } catch (err) {
+      if (options.verbose) {
         console.error(err);
-        console.log(chalk.red(`Resource could not be imported: ${v.resource.resourceType}.${v.resource.resourceId}`));
-      }),
-  );
+      }
+      options.verbose ? fs.renameSync(filename, filename + ".error.txt") : fs.unlinkSync(getFile(v.resource));
+      console.log(
+        chalk.red(`Resource could not be imported: ${v.resource.resourceType}.${v.resource.resourceId}: ${err}`),
+      );
+    }
+  });
 };
 
 const doList = async () => {
@@ -104,19 +88,17 @@ const doList = async () => {
   }
 };
 
-const doImport = async (url: string) => {
+const doImport = async (url: string, options: LogOptions) => {
   const [type, ...rest] = url.split("/");
   const identifier = rest.join("/");
 
-  await importResources([{ type, identifier }]);
+  await importResources([{ type, identifier }], options);
 };
 
-const doImportAll = async () => {
+const doImportAll = async (options: LogOptions) => {
   const resources = await getResources();
-  await importResources(resources);
+  await importResources(resources, options);
 };
-
-AWS.config.update({ region: "eu-west-1" });
 
 yargs
   .scriptName("terraform-import")
@@ -153,10 +135,16 @@ yargs
           type: "string",
           demandOption: false,
           describe: "the id for the created managed resource",
+        })
+        .option("verbose", {
+          alias: "v",
+          type: "boolean",
+          default: false,
+          description: "Run with verbose logging",
         });
     },
     async argv => {
-      doImport("" + argv.resource);
+      doImport("" + argv.resource, { verbose: !!argv.verbose });
     },
   )
   .command(
@@ -164,7 +152,7 @@ yargs
     "Imports all resources to terraform",
     yargs => {},
     async argv => {
-      doImportAll();
+      doImportAll({ verbose: !!argv.options });
     },
   )
   .strict()
